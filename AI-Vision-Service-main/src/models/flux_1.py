@@ -1,9 +1,10 @@
-import torch
-
 from dataclasses import dataclass
+
+import torch
 from diffusers import FluxPipeline
-from src.models.base import BaseModel
 from PIL import Image
+
+from src.models.base import BaseModel
 
 
 @dataclass

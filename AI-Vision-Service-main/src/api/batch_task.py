@@ -7,7 +7,6 @@ from time import time
 
 import uvicorn
 from fastapi import FastAPI, Request
-
 from model_registry import get_model
 from models.flux_1 import TextToImageInput
 from models.qwen2_5_vl import ImageToTextInput
@@ -23,20 +22,14 @@ model = None
 
 
 async def batch_worker():
-    print(
-        f"[Worker] Started with batch size {TEXT2IMAGE_BATCH_SIZE} and timeout {BATCH_TIMEOUT}"
-    )
+    print(f"[Worker] Started with batch size {TEXT2IMAGE_BATCH_SIZE} and timeout {BATCH_TIMEOUT}")
 
     while True:
         first_task = await queue.get()
         batch = [first_task]
         start_time = time()
 
-        batch_size = (
-            TEXT2IMAGE_BATCH_SIZE
-            if MODEL_TYPE == "text2image"
-            else IMAGE2TEXT_BATCH_SIZE
-        )
+        batch_size = TEXT2IMAGE_BATCH_SIZE if MODEL_TYPE == "text2image" else IMAGE2TEXT_BATCH_SIZE
         while len(batch) < batch_size and (time() - start_time) < BATCH_TIMEOUT:
             try:
                 task = queue.get_nowait()

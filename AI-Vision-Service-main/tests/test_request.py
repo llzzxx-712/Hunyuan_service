@@ -1,9 +1,9 @@
 import asyncio
 import base64
-import aiohttp
 import os
 from time import time
 
+import aiohttp
 
 HTTP_URL = "http://localhost:8000/infer"
 WS_URL = "ws://localhost:8000/ws"
@@ -57,9 +57,7 @@ async def test_http_image2text(
             return
         data = await resp.json()
         text = data.get("text", "")
-        print(
-            f"[HTTP {idx}] ✅ {end_time - start_time:.2f}s | Response: {text[:60]}..."
-        )
+        print(f"[HTTP {idx}] ✅ {end_time - start_time:.2f}s | Response: {text[:60]}...")
 
 
 async def main(prompts: list[str]):
@@ -72,10 +70,7 @@ async def main(prompts: list[str]):
     if MODE == "text2image":
         async with aiohttp.ClientSession(timeout=timeout) as session:
             print("🚀 Testing HTTP Text2Image...")
-            tasks = [
-                test_http_text2image(session, prompts[i], i + 1)
-                for i in range(NUM_REQUESTS)
-            ]
+            tasks = [test_http_text2image(session, prompts[i], i + 1) for i in range(NUM_REQUESTS)]
             await asyncio.gather(*tasks)
     elif MODE == "image2text":
         async with aiohttp.ClientSession(timeout=timeout) as session:

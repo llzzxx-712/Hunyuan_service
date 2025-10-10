@@ -1,14 +1,15 @@
 import asyncio
 import base64
-import os
 import io
+import os
 from contextlib import asynccontextmanager
-from model_registry import get_model
+from time import time
+
+import uvicorn
 from fastapi import FastAPI, Request
+from model_registry import get_model
 from models.flux_1 import TextToImageInput
 from models.qwen2_5_vl import ImageToTextInput
-import uvicorn
-from time import time
 
 MODEL_TYPE = os.getenv("MODEL_TYPE", "text2image").lower()
 

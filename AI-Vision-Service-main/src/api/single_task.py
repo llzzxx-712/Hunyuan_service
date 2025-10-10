@@ -7,7 +7,6 @@ from time import time
 
 import uvicorn
 from fastapi import FastAPI, Request
-
 from model_registry import get_model
 from models.flux_1 import TextToImageInput
 from models.qwen2_5_vl import ImageToTextInput

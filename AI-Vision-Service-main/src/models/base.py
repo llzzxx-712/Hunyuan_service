@@ -1,6 +1,7 @@
-import torch
 from abc import ABC, abstractmethod
 from typing import TypeVar
+
+import torch
 
 InputType = TypeVar("InputType")
 OutputType = TypeVar("OutputType")

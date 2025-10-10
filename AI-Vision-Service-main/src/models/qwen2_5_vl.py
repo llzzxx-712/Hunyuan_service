@@ -1,10 +1,12 @@
-import torch
-from transformers import (
-    Qwen2_5_VLForConditionalGeneration,
-    AutoProcessor,
-)
-from qwen_vl_utils import process_vision_info
 from dataclasses import dataclass
+
+import torch
+from qwen_vl_utils import process_vision_info
+from transformers import (
+    AutoProcessor,
+    Qwen2_5_VLForConditionalGeneration,
+)
+
 from src.models.base import BaseModel
 
 
@@ -60,8 +62,7 @@ class Qwen2_5_VLModel(BaseModel):
 
         generated_ids = self.model.generate(**inputs, max_new_tokens=max_new_tokens)
         generated_ids_trimmed = [
-            out_ids[len(in_ids) :]
-            for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+            out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
         ]
 
         output_text = self.processor.batch_decode(
@@ -77,9 +78,7 @@ class Qwen2_5_VLModel(BaseModel):
         inputs: list[ImageToTextInput],
         max_new_tokens: int = 128,
     ) -> list[ImageToTextOutput]:
-        batch_messages = [
-            self.template_input(input.prompt, input.images) for input in inputs
-        ]
+        batch_messages = [self.template_input(input.prompt, input.images) for input in inputs]
         batch_text = [
             self.processor.apply_chat_template(
                 messages, tokenize=False, add_generation_prompt=True
@@ -96,9 +95,7 @@ class Qwen2_5_VLModel(BaseModel):
             return_tensors="pt",
         ).to(self.device)
 
-        generated_ids = self.model.generate(
-            **batch_inputs, max_new_tokens=max_new_tokens
-        )
+        generated_ids = self.model.generate(**batch_inputs, max_new_tokens=max_new_tokens)
         generated_ids_trimmed = [
             out_ids[len(in_ids) :]
             for in_ids, out_ids in zip(batch_inputs.input_ids, generated_ids)
@@ -115,8 +112,6 @@ class Qwen2_5_VLModel(BaseModel):
 
 if __name__ == "__main__":
     model = Qwen2_5_VLModel()
-    output = model.infer(
-        ImageToTextInput(images=["image.png"], prompt="Describe the image")
-    )
+    output = model.infer(ImageToTextInput(images=["image.png"], prompt="Describe the image"))
 
     print(output.text)
