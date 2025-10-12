@@ -12,11 +12,12 @@ from models.flux_1 import TextToImageInput
 from models.qwen2_5_vl import ImageToTextInput
 
 MODEL_TYPE = os.getenv("MODEL_TYPE", "text2image").lower()
-TEXT2IMAGE_BATCH_SIZE = int(os.getenv("TEXT2IMAGE_BATCH_SIZE", 2))
-IMAGE2TEXT_BATCH_SIZE = int(os.getenv("IMAGE2TEXT_BATCH_SIZE", 2))
-BATCH_TIMEOUT = int(os.getenv("BATCH_TIMEOUT", 0.3))
+TEXT2IMAGE_BATCH_SIZE = int(os.getenv("TEXT2IMAGE_BATCH_SIZE", 5))
+IMAGE2TEXT_BATCH_SIZE = int(os.getenv("IMAGE2TEXT_BATCH_SIZE", 5))
+# BATCH_TIMEOUT = int(os.getenv("BATCH_TIMEOUT", 0.3))
+BATCH_TIMEOUT = 0.3
 
-queue = asyncio.Queue(maxsize=1)
+queue = asyncio.Queue(maxsize=64)
 
 model = None
 
@@ -31,6 +32,7 @@ async def batch_worker():
 
         batch_size = TEXT2IMAGE_BATCH_SIZE if MODEL_TYPE == "text2image" else IMAGE2TEXT_BATCH_SIZE
         while len(batch) < batch_size and (time() - start_time) < BATCH_TIMEOUT:
+            print(f"[Worker] Queue size: {queue.qsize()}")
             try:
                 task = queue.get_nowait()
                 batch.append(task)
@@ -38,9 +40,11 @@ async def batch_worker():
                 await asyncio.sleep(0.01)
 
         funcs, inputs, futs = zip(*batch)
+        print(f"[Worker] Processed {len(batch)} tasks")
+
         try:
             results = await asyncio.to_thread(funcs[0], inputs)
-
+            print(f"{len(results)=}")
             if not isinstance(results, list):
                 results = [results]
             for fut, result in zip(futs, results):
@@ -48,6 +52,7 @@ async def batch_worker():
         except Exception as e:
             for fut in futs:
                 fut.set_exception(e)
+                print(f"[Worker] Error: {e}")
         finally:
             for task in batch:
                 queue.task_done()
@@ -77,7 +82,7 @@ async def infer(request: Request):
     start_time = time()
     if MODEL_TYPE == "text2image":
         input_data = TextToImageInput(prompt=input_data.get("prompt"))
-        output_data = await enqueue_task(model.infer, input_data)
+        output_data = await enqueue_task(model.batch_infer, input_data)
 
         end_time = time()
         print(f"Text2Image request done in {end_time - start_time:.2f}s")
@@ -92,7 +97,7 @@ async def infer(request: Request):
         input_data = ImageToTextInput(
             images=input_data.get("images"), prompt=input_data.get("prompt")
         )
-        output_data = await enqueue_task(model.infer, input_data)
+        output_data = await enqueue_task(model.batch_infer, input_data)
 
         end_time = time()
         print(f"Image2Text request done in {end_time - start_time:.2f}s")
