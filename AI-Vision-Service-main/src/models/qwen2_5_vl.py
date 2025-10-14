@@ -78,12 +78,14 @@ class Qwen2_5_VLModel(BaseModel):
                     )
                 print("[Qwen2_5_VLModel] Warmup complete — compiled graph ready.")
 
-    def template_input(self, prompt: str, images: list[str]) -> list:
+    def template_input(
+        prompt: str, images: list[str]
+    ) -> list:  # 打包 processor需要的 messages 参数
         messages = [{"role": "user", "content": []}]
 
-        for image in images:
-            messages[0]["content"].append({"type": "image", "image": image})
         messages[0]["content"].append({"type": "text", "text": prompt})
+        for img in range(images):
+            messages[0]["content"].append({"type": "image", "image": img})
 
         return messages
 
