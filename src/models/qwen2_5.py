@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 
 import torch
@@ -19,13 +20,20 @@ class ImageToTextOutput:
 
 
 class Qwen2_5Model(BaseModel):
-    def __init__(self, model_name="Qwen/Qwen2.5-VL-3B-Instruct") -> None:
+    def __init__(self, model_name: str = "Qwen/Qwen2.5-VL-3B-Instruct") -> None:
         super().__init__()
+
+        # 支持通过环境变量指定本地模型路径，优先级: 环境变量 > 传入参数
+        model_path = os.getenv("QWEN_MODEL_PATH", model_name)
+
+        print(f"[Qwen2_5Model] 加载模型: {model_path}")
+
         self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-            model_name, torch_dtype=torch.float16, device_map="auto", attn_implementation="sdpa"
+            model_path, dtype=torch.float16, device_map="auto", attn_implementation="sdpa"
         )
-        self.processor = AutoProcessor.from_pretrained(model_name)
-        self.model.to(self.device)
+        self.processor = AutoProcessor.from_pretrained(model_path)
+
+        print(f"[Qwen2_5Model] 模型加载完成，使用设备: {self.device}")
 
     def template_input(self, prompt: str, images: list[str]) -> list:
         message = [{"role": "user", "content": []}]
@@ -65,10 +73,16 @@ class Qwen2_5Model(BaseModel):
 
 
 if __name__ == "__main__":
+    # 运行前设置路径: export QWEN_MODEL_PATH="/home/lzx/projects/hunyuan-service
+    # /models/models--Qwen--Qwen2.5-VL-3B-Instruct/snapshots
+    # /66285546d2b821cf421d4f5eb2576359d3770cd3"
+    model = Qwen2_5Model()
+
     images = [
         "outputs/image_0.png",
     ]
 
-    model = Qwen2_5Model()
-    output = model.infer(ImageToTextInput(imgs=images, prompt="Describe the image"))
-    print(output.result)
+    output = model.infer(
+        ImageToTextInput(imgs=images, prompt="这是一张手写字的图片，请识别图片中的文字")
+    )
+    print(f"\n推理结果: {output.result}")
