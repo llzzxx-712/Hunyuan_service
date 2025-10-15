@@ -13,10 +13,13 @@ dependencies = [
     "torchaudio>=2.8.0",
     "torchvision>=0.23.0",
     "uvicorn>=0.37.0",
-    "transformers>=4.40.0",
+    "transformers>=4.40.0,<4.57.0",
+    "diffusers>=0.30.0",
     "qwen-vl-utils>=0.0.8",
     "accelerate>=0.27.0",
     "pillow>=10.0.0",
+    "sentencepiece>=0.1.99",
+    "protobuf>=3.20.0",
 ]
 
 [dependency-groups]
