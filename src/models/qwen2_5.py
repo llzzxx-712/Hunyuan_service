@@ -132,22 +132,31 @@ class Qwen2_5Model(BaseModel):
                 return_tensors="pt",
             ).to(self.device)
 
-            # 使用参数中的 max_new_tokens
-            # generated_ids = self.model.generate(**batch_inputs, max_new_tokens=max_new_tokens)
+            # 调试确认padding情况
+            print(f"Batch中的样本数: {len(batch_inputs['input_ids'])}")
+            for i, (ids, mask) in enumerate(
+                zip(batch_inputs["input_ids"], batch_inputs["attention_mask"])
+            ):
+                actual_tokens = mask.sum().item()  # 实际非padding的token数
+                print(f"  样本{i + 1}: 总长度={len(ids)}, 有效tokens={actual_tokens}")
+
+            generated_ids = self.model.generate(**batch_inputs, max_new_tokens=max_new_tokens)
             # 添加生成参数以获得更好的输出
-            generated_ids = self.model.generate(
-                **batch_inputs,
-                max_new_tokens=max_new_tokens,
-                do_sample=False,  # 使用贪婪解码，更稳定
-                temperature=1.0,
-            )
+            # generated_ids = self.model.generate(
+            #     **batch_inputs,
+            #     max_new_tokens=max_new_tokens,
+            #     do_sample=False,  # 使用贪婪解码，更稳定
+            #     temperature=1.0,
+            # )
 
             # 调试信息：检查生成的长度
-            for i, (in_ids, out_ids) in enumerate(zip(batch_inputs["input_ids"], generated_ids)):
-                print(
-                    f"  样本{i + 1}: 输入长度={len(in_ids)}, "
-                    "输出长度={len(out_ids)}, 新生成={len(out_ids)-len(in_ids)}"
-                )
+            print(f"图片数量: {len(image_inputs) if image_inputs else 0}")
+            if image_inputs:
+                for i, img in enumerate(image_inputs):
+                    if hasattr(img, "shape"):
+                        print(f"  图片{i + 1} shape: {img.shape}")
+                    elif isinstance(img, str):
+                        print(f"  图片{i + 1} 是路径: {img}")
 
             generated_ids_trimmed = [
                 out_ids[len(in_ids) :]
@@ -169,7 +178,7 @@ if __name__ == "__main__":
     # 运行前设置路径: export QWEN_MODEL_PATH="/home/lzx/projects/hunyuan-service
     # /models/models--Qwen--Qwen2.5-VL-3B-Instruct/snapshots
     # /66285546d2b821cf421d4f5eb2576359d3770cd3"
-    model = Qwen2_5Model(do_warmup=True, compile_model=True)
+    model = Qwen2_5Model(do_warmup=True, compile_model=False)
 
     # single_input = ImageToTextInput(
     #     imgs=["outputs/image_0.png"],
@@ -179,10 +188,11 @@ if __name__ == "__main__":
     # print(f"\n单个推理结果: {output.result}")
 
     batch_inputs = [
-        ImageToTextInput(imgs=["outputs/To_warm.png"], prompt="描述这张图片"),
+        # ImageToTextInput(imgs=["outputs/sample.png"], prompt="描述这张图片"),
         # ImageToTextInput(imgs=["outputs/image_0.png"], prompt="图片中写了什么？"),
-        ImageToTextInput(imgs=["outputs/To_warm.png"], prompt="这张图片中的主体是什么形状"),
-        ImageToTextInput(imgs=["outputs/image_1.png"], prompt="识别图中的文字"),
+        ImageToTextInput(imgs=["outputs/image_2.png"], prompt="识别图中的文字"),
+        ImageToTextInput(imgs=["outputs/sample_large.png"], prompt="描述这张图片"),
+        # ImageToTextInput(imgs=["outputs/sample_large1.png"], prompt="描述这张图片"),
     ]
     batch_outputs = model.batch_infer(batch_inputs, max_new_tokens=100, enable_profiler=True)
 
