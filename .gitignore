@@ -8,3 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Performance profiling and trace files
+*_trace.json
+*.prof
+*.pstats

@@ -27,9 +27,8 @@ class HunYuanModel(BaseModel):
     ):
         super().__init__()
 
-        # 支持通过环境变量指定本地模型路径
+        # 通过环境变量指定本地模型路径
         model_path = os.getenv("HUNYUAN_MODEL_PATH", model_name)
-
         print(f"[HunyuanModel] 加载模型: {model_path}")
 
         self.pipeline = HunyuanDiTPipeline.from_pretrained(
@@ -41,10 +40,10 @@ class HunYuanModel(BaseModel):
             self.pipeline.vae.to(memory_format=torch.channels_last)
 
             self.pipeline.transformer = torch.compile(
-                self.pipeline.transformer, mode="max-autotune", fullgraph=True
+                self.pipeline.transformer, mode=compile_mode, fullgraph=True
             )
             self.pipeline.vae.decode = torch.compile(
-                self.pipeline.vae.decode, mode="max-autotune", fullgraph=True
+                self.pipeline.vae.decode, mode=compile_mode, fullgraph=True
             )
 
     @torch.inference_mode()
@@ -84,6 +83,10 @@ class HunYuanModel(BaseModel):
 
 
 if __name__ == "__main__":
+    # 运行前设置路径: export HUNYUAN_MODEL_PATH="/home/lzx/projects
+    # /hunyuan-service/models/models--Tencent-Hunyuan--HunyuanDiT-v1.1-Diffusers-Distilled
+    # /snapshots/527cf2ecce7c04021975938f8b0e44e35d2b1ed9"
+
     prompts = [
         "一个充满科技感的教室",
         "A beautiful sunset over the ocean",
