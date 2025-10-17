@@ -144,17 +144,17 @@ if __name__ == "__main__":
     prompts = [
         "一个充满科技感的教室",
         "A beautiful sunset over the ocean",
-        "一只可爱的猫咪在窗台上",
+        # "一只可爱的猫咪在窗台上",
     ]
     save_path = "outputs/hunyuan_output.png"
 
-    model = HunYuanModel(compile_model=False, do_warmup=True)
+    model = HunYuanModel(compile_model=False, do_warmup=False)
 
     # 单个推理
-    input = TextToImageInput(prompt=prompts[0])
-    output = model.infer(input, height=768, width=1024, num_inference_steps=20)
-    output.image.save(save_path)
-    print(f"图片已保存到: {save_path}")
+    # input = TextToImageInput(prompt=prompts[0])
+    # output = model.infer(input, height=768, width=1024, num_inference_steps=20)
+    # output.image.save(save_path)
+    # print(f"图片已保存到: {save_path}")
 
     # 批量推理
     print("开始批量推理")

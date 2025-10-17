@@ -19,7 +19,7 @@ class ImageToTextInput:
 
 @dataclass
 class ImageToTextOutput:
-    result: str
+    text: str
 
 
 class Qwen2_5Model(BaseModel):
@@ -93,7 +93,7 @@ class Qwen2_5Model(BaseModel):
         output_text = self.processor.batch_decode(
             generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )
-        return ImageToTextOutput(result=output_text[0])
+        return ImageToTextOutput(text=output_text[0])
 
     @torch.inference_mode()
     def batch_infer(
@@ -171,7 +171,7 @@ class Qwen2_5Model(BaseModel):
         if enable_profiler:
             profiler.export_chrome_trace("qwen2_5_trace.json")
 
-        return [ImageToTextOutput(result=text) for text in output_text]
+        return [ImageToTextOutput(text=text) for text in output_text]
 
 
 if __name__ == "__main__":
@@ -198,4 +198,4 @@ if __name__ == "__main__":
 
     print("\n批量推理结果:")
     for i, output in enumerate(batch_outputs):
-        print(f"  [{i + 1}] {output.result}")
+        print(f"  [{i + 1}] {output.text}")
