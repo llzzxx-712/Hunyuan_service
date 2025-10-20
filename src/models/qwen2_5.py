@@ -71,7 +71,10 @@ class Qwen2_5Model(BaseModel):
     def warm_up(self):
         print("[Qwen2_5_VLModel] 开始预热...")
         _ = self.batch_infer(
-            [ImageToTextInput(imgs=["outputs/To_warm.png"], prompt="描述这张图片")]
+            [
+                ImageToTextInput(imgs=["outputs/image_2.png"], prompt="识别图中的文字"),
+                ImageToTextInput(imgs=["outputs/sample_large.png"], prompt="描述这张图片"),
+            ]
         )
         print("预热完成")
 
@@ -108,6 +111,7 @@ class Qwen2_5Model(BaseModel):
         inputs: list[ImageToTextInput],
         max_new_tokens: int = 128,
         enable_profiler: bool = False,
+        profiler_output: str = "qwen2_5_trace.json",
     ) -> list[ImageToTextOutput]:
         if enable_profiler:
             prof_context = profile(
@@ -140,12 +144,12 @@ class Qwen2_5Model(BaseModel):
             ).to(self.device)
 
             # 调试确认padding情况
-            print(f"Batch中的样本数: {len(batch_inputs['input_ids'])}")
-            for i, (ids, mask) in enumerate(
-                zip(batch_inputs["input_ids"], batch_inputs["attention_mask"])
-            ):
-                actual_tokens = mask.sum().item()  # 实际非padding的token数
-                print(f"  样本{i + 1}: 总长度={len(ids)}, 有效tokens={actual_tokens}")
+            # print(f"Batch中的样本数: {len(batch_inputs['input_ids'])}")
+            # for i, (ids, mask) in enumerate(
+            #     zip(batch_inputs["input_ids"], batch_inputs["attention_mask"])
+            # ):
+            #     actual_tokens = mask.sum().item()  # 实际非padding的token数
+            #     print(f"  样本{i + 1}: 总长度={len(ids)}, 有效tokens={actual_tokens}")
 
             generated_ids = self.model.generate(**batch_inputs, max_new_tokens=max_new_tokens)
             # 添加生成参数以获得更好的输出
@@ -176,7 +180,7 @@ class Qwen2_5Model(BaseModel):
             print(f"batch_infer 用时：{end_time - start_time}")
 
         if enable_profiler:
-            profiler.export_chrome_trace("qwen2_5_trace.json")
+            profiler.export_chrome_trace(profiler_output)
 
         return [ImageToTextOutput(text=text) for text in output_text]
 

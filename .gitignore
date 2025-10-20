@@ -10,6 +10,6 @@ wheels/
 .venv
 
 # Performance profiling and trace files
-*_trace.json
+*trace*.json
 *.prof
 *.pstats
