@@ -38,9 +38,16 @@ class Qwen2_5Model(BaseModel):
         print(f"[Qwen2_5Model] 加载模型: {model_path}")
 
         self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-            model_path, dtype=torch.float16, device_map="auto", attn_implementation="sdpa"
+            model_path,
+            dtype=torch.float16,
+            device_map="auto",
+            attn_implementation="sdpa",
+            # local_files_only=True, cache_dir=os.getenv("HF_HOME")
         )
-        self.processor = AutoProcessor.from_pretrained(model_path)
+        self.processor = AutoProcessor.from_pretrained(
+            model_path,
+            # local_files_only=True, cache_dir=os.getenv("HF_HOME")
+        )
 
         # 修复 padding 方向：decoder-only 模型需要左侧填充
         if hasattr(self.processor, "tokenizer"):

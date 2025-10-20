@@ -80,7 +80,7 @@ def image_to_text_service():
         prompt = req.prompt
         input = ImageToTextInput(imgs=images, prompt=prompt)
         output = await enqueue(model.infer, input)
-        return {"text": output.result}
+        return {"text": output.text}
 
 
 if MODEL_TYPE == "text_to_image":

@@ -1,7 +1,51 @@
+# Python 缓存
 __pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+.venv
+venv
+
+# Git 相关
 .git
 .gitignore
+.gitattributes
+
+# 项目相关
 tests
 outputs
+docs
 *.json
 *.md
+README.md
+Project_Note.md
+
+# AI-Vision-Service 参考项目（如果不需要）
+AI-Vision-Service-main
+
+# 模型缓存和大文件（根据实际情况调整）
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+models/
+checkpoints/
+
+# IDE 和编辑器
+.vscode
+.idea
+*.swp
+*.swo
+
+# 日志文件
+*.log
+
+# Docker 自身文件
+Dockerfile
+.dockerignore

@@ -36,7 +36,7 @@ class HunYuanModel(BaseModel):
         print(f"[HunyuanModel] 加载模型: {model_path}")
 
         self.pipeline = HunyuanDiTPipeline.from_pretrained(
-            model_path, torch_dtype=torch.float16
+            model_path, torch_dtype=torch.float16, local_files_only=True
         ).to(self.device)
 
         if compile_model:
@@ -76,13 +76,6 @@ class HunYuanModel(BaseModel):
             (1024, 1024),
             (1280, 1280),
             (1024, 768),
-            (1152, 864),
-            (1280, 960),
-            (768, 1024),
-            (864, 1152),
-            (960, 1280),
-            (1280, 768),
-            (768, 1280),
         ]
 
         if (height, width) not in supported_sizes:
