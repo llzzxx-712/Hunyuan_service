@@ -1,4 +1,3 @@
-import sys
 import time
 
 import torch
@@ -15,27 +14,38 @@ def benchmark_model(
     model: Qwen2_5Model,
     test_inputs: list,
     num_runs: int = 3,
-    profiler_output: str = "trace_baseline.json",
+    enable_profiling: bool = False,
+    profiler_output: str = "trace.json",
     max_new_tokens: int = 100,
 ):
     """测试模型性能，多次运行取平均"""
     times = []
     for i in range(num_runs):
+        # 只在最后一次运行时启用 profiler
+        enable_prof = enable_profiling and (i == num_runs - 1)
+
         start = time.time()
         batch_outputs = model.batch_infer(
             test_inputs,
             max_new_tokens=max_new_tokens,
-            enable_profiler=False,
-            profiler_output=profiler_output if i == num_runs - 1 else None,
+            enable_profiler=enable_prof,
+            profiler_output=profiler_output,
         )
         end = time.time()
         elapsed = end - start
         times.append(elapsed)
-        print(f"  第 {i + 1} 次运行: {elapsed:.3f}秒")
 
+        if enable_prof:
+            print(f"  第 {i + 1} 次运行（with profiler）: {elapsed:.3f}秒")
+            print(f"  ✓ Profiler trace 已保存到: {profiler_output}")
+        else:
+            print(f"  第 {i + 1} 次运行: {elapsed:.3f}秒")
+
+        # 显示最后一次的输出结果
         if i == num_runs - 1:
-            for i, output in enumerate(batch_outputs):
-                print(f"  [{i + 1}] {output.text}")
+            for idx, output in enumerate(batch_outputs):
+                text_preview = output.text[:80] + "..." if len(output.text) > 80 else output.text
+                print(f"  [{idx + 1}] {text_preview}")
 
     avg_time = sum(times) / len(times)
     return avg_time, times
@@ -47,48 +57,37 @@ def clean_cuda_state():
         torch.cuda.empty_cache()
         torch.cuda.reset_peak_memory_stats()
         torch.cuda.synchronize()
-
-        # 强制垃圾回收
         import gc
 
         gc.collect()
-
-        # 尝试重置 CUDA 上下文（实验性）
         torch.cuda._lazy_init()
 
 
 def main():
     # 准备测试数据
-    test_inputs = [
-        ImageToTextInput(imgs=["outputs/image_2.png"], prompt="识别图中的文字"),
-        ImageToTextInput(imgs=["outputs/sample_large.png"], prompt="描述这张图片"),
-    ]
-
-    # test_inputs1 = [
-    #     ImageToTextInput(imgs=["outputs/image_1.png"], prompt="识别图中的文字"),
-    #     ImageToTextInput(imgs=["outputs/hunyuan_output_1_small.png"], prompt="描述这张图片"),
-    # ]
-
-    # test_inputs2 = [
-    #     #ImageToTextInput(imgs=["outputs/sample_small.png"], prompt="识别图中的文字"),
+    # test_inputs = [
+    #     ImageToTextInput(imgs=["outputs/image_2.png"], prompt="识别图中的文字"),
     #     ImageToTextInput(imgs=["outputs/sample_large.png"], prompt="描述这张图片"),
     # ]
+
+    test_inputs_large = [
+        ImageToTextInput(imgs=["outputs/classroom_small.png"], prompt="描述这张图片"),
+        ImageToTextInput(imgs=["outputs/hunyuan_output_1.png"], prompt="描述这张图片"),
+    ]
+
+    # test_inputs_small = [
+    #     ImageToTextInput(imgs=["outputs/sample.png"], prompt="描述这张图片"),
+    #     ImageToTextInput(imgs=["outputs/To_warm.png"], prompt="描述这张图片"),
+    # ]
+
+    tem_model = Qwen2_5Model(do_warmup=False, compile_model=False)
+    _ = tem_model.batch_infer(test_inputs_large, max_new_tokens=100, enable_profiler=False)
+    del tem_model
+    clean_cuda_state()
 
     print("=" * 60)
     print("Torch Compile 性能对比测试")
     print("=" * 60)
-
-    # print("\n[测试 2] 编译版本 (mode=default)")
-    # print("-" * 60)
-    # model_compiled = Qwen2_5Model(compile_model=True, compile_mode="default", do_warmup=True)
-    # print("预热完成，开始测试...")
-    # avg_compiled, times_compiled = benchmark_model(
-    #     model_compiled, test_inputs, num_runs=3, profiler_output="trace_compiled.json"
-    # )
-    # print(f"平均耗时: {avg_compiled:.3f}秒")
-
-    # del model_compiled
-    # clean_cuda_state()
 
     # 测试 1: 未编译版本
     print("\n[测试 1] 未编译版本 (baseline)")
@@ -101,9 +100,10 @@ def main():
 
     avg_baseline, times_baseline = benchmark_model(
         model_baseline,
-        test_inputs,
-        num_runs=3,
-        profiler_output="trace_baseline.json",
+        test_inputs_large,
+        num_runs=4,
+        enable_profiling=False,
+        profiler_output="trace_baseline_warm.json",
         max_new_tokens=100,
     )
     print(f"平均耗时: {avg_baseline:.3f}秒")
@@ -112,32 +112,23 @@ def main():
     del model_baseline
     clean_cuda_state()
 
-    # 检查 transformers 相关的模块
-    print("\n检查 transformers 模块缓存：")
-    for key in sys.modules.keys():
-        if "qwen" in key.lower():
-            print(f"  {key}")
-
-    # 检查 SDPA 相关的全局状态
-    import torch.nn.functional as F
-
-    if hasattr(F, "_scaled_dot_product_attention"):
-        print("SDPA 已初始化")
-    else:
-        print("SDPA 未初始化")
-
     # 测试 2: 编译版本 (default mode)
     print("\n[测试 2] 编译版本 (mode=default)")
     print("-" * 60)
 
     load_start = time.time()
-    model_compiled = Qwen2_5Model(compile_model=True, compile_mode="default", do_warmup=True)
+    model_compiled = Qwen2_5Model(compile_model=True, compile_mode="default", do_warmup=False)
     load_end = time.time()
     print(f"[Time] 模型加载耗时: {load_end - load_start:.3f}秒")
 
-    print("预热完成，开始测试...")
+    print("开始测试...")
     avg_compiled, times_compiled = benchmark_model(
-        model_compiled, test_inputs, num_runs=3, profiler_output="trace_compiled.json"
+        model_compiled,
+        test_inputs_large,
+        num_runs=4,
+        enable_profiling=False,
+        profiler_output="trace_compiled_warm.json",
+        max_new_tokens=100,
     )
     print(f"平均耗时: {avg_compiled:.3f}秒")
 

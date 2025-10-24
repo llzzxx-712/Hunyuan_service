@@ -22,6 +22,18 @@ class ImageToTextOutput:
     text: str
 
 
+def clean_cuda_state():
+    """彻底清理 CUDA 状态"""
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
+        torch.cuda.synchronize()
+        import gc
+
+        gc.collect()
+        torch.cuda._lazy_init()
+
+
 class Qwen2_5Model(BaseModel):
     def __init__(
         self,
@@ -41,7 +53,6 @@ class Qwen2_5Model(BaseModel):
             model_path,
             dtype=torch.float16,
             device_map="auto",
-            # device_map="cuda:0" if torch.cuda.is_available() else "cpu",
             attn_implementation="sdpa",
             # local_files_only=True, cache_dir=os.getenv("HF_HOME")
         )
@@ -141,29 +152,22 @@ class Qwen2_5Model(BaseModel):
                 images=image_inputs,
                 videos=video_inputs,
                 padding=True,
-                # return_tensors="pt",
+                return_tensors="pt",
             ).to(self.device)
 
             # 调试确认padding情况
-            # print(f"Batch中的样本数: {len(batch_inputs['input_ids'])}")
-            # for i, (ids, mask) in enumerate(
-            #     zip(batch_inputs["input_ids"], batch_inputs["attention_mask"])
-            # ):
-            #     actual_tokens = mask.sum().item()  # 实际非padding的token数
-            #     print(f"  样本{i + 1}: 总长度={len(ids)}, 有效tokens={actual_tokens}")
+            print(f"Batch中的样本数: {len(batch_inputs['input_ids'])}")
+            for i, (ids, mask) in enumerate(
+                zip(batch_inputs["input_ids"], batch_inputs["attention_mask"])
+            ):
+                actual_tokens = mask.sum().item()  # 实际非padding的token数
+                print(f"  样本{i + 1}: 总长度={len(ids)}, 有效tokens={actual_tokens}")
 
             generated_ids = self.model.generate(
                 **batch_inputs,
                 max_new_tokens=max_new_tokens,
-                do_sample=False,
+                # do_sample=False,
             )
-            # 添加生成参数以获得更好的输出
-            # generated_ids = self.model.generate(
-            #     **batch_inputs,
-            #     max_new_tokens=max_new_tokens,
-            #     do_sample=False,  # 使用贪婪解码，更稳定
-            #     temperature=1.0,
-            # )
 
             # 调试信息：检查生成的长度
             print(f"图片数量: {len(image_inputs) if image_inputs else 0}")
@@ -191,56 +195,9 @@ class Qwen2_5Model(BaseModel):
 
 
 def main():
-    batch_inputs = [
-        ImageToTextInput(imgs=["outputs/image_2.png"], prompt="识别图中的文字"),
-        ImageToTextInput(imgs=["outputs/sample_large.png"], prompt="描述这张图片"),
-    ]
-
-    print("\n" + "=" * 60)
-    print("测试编译版本")
-    print("=" * 60)
-    model_compiled = Qwen2_5Model(do_warmup=True, compile_model=True)
-    _ = model_compiled.batch_infer(batch_inputs, max_new_tokens=100, enable_profiler=False)
-
-    del model_compiled
-    import torch
-
-    torch.cuda.empty_cache()
-
-    print("=" * 60)
-    print("测试未编译版本")
-    print("=" * 60)
-    model_baseline = Qwen2_5Model(do_warmup=False, compile_model=False)
-    _ = model_baseline.batch_infer(batch_inputs, max_new_tokens=100, enable_profiler=False)
-
-    return
-
-    # 删除模型，清理显存
-    del model_baseline
-    import torch
-
-    torch.cuda.empty_cache()
-
-    # 再测试编译版本
-    print("\n" + "=" * 60)
-    print("测试编译版本")
-    print("=" * 60)
-    model_compiled = Qwen2_5Model(do_warmup=True, compile_model=True)
-    _ = model_compiled.batch_infer(batch_inputs, max_new_tokens=100, enable_profiler=False)
-
-    return
-
     # 运行前设置路径: export QWEN_MODEL_PATH="/home/lzx/projects/hunyuan-service
     # /models/models--Qwen--Qwen2.5-VL-3B-Instruct/snapshots
     # /66285546d2b821cf421d4f5eb2576359d3770cd3"
-    model = Qwen2_5Model(do_warmup=True, compile_model=True)
-
-    # single_input = ImageToTextInput(
-    #     imgs=["outputs/image_0.png"],
-    #     prompt="这是一张手写字的图片，请识别图片中的文字"
-    # )
-    # output = model.infer(single_input)
-    # print(f"\n单个推理结果: {output.result}")
 
     batch_inputs = [
         # ImageToTextInput(imgs=["outputs/sample.png"], prompt="描述这张图片"),
@@ -249,7 +206,14 @@ def main():
         ImageToTextInput(imgs=["outputs/sample_large.png"], prompt="描述这张图片"),
         # ImageToTextInput(imgs=["outputs/sample_large1.png"], prompt="描述这张图片"),
     ]
-    batch_outputs = model.batch_infer(batch_inputs, max_new_tokens=100, enable_profiler=True)
+
+    tem_model = Qwen2_5Model(do_warmup=False, compile_model=False)
+    _ = tem_model.batch_infer(batch_inputs, max_new_tokens=100, enable_profiler=False)
+    del tem_model
+    clean_cuda_state()
+
+    model = Qwen2_5Model(do_warmup=False, compile_model=True)
+    batch_outputs = model.batch_infer(batch_inputs, max_new_tokens=100, enable_profiler=False)
 
     print("\n批量推理结果:")
     for i, output in enumerate(batch_outputs):
