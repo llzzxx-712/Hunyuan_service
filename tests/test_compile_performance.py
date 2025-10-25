@@ -73,6 +73,8 @@ def main():
     test_inputs_large = [
         ImageToTextInput(imgs=["outputs/classroom_small.png"], prompt="描述这张图片"),
         ImageToTextInput(imgs=["outputs/hunyuan_output_1.png"], prompt="描述这张图片"),
+        ImageToTextInput(imgs=["outputs/classroom_small.png"], prompt="描述这张图片"),
+        # ImageToTextInput(imgs=["outputs/hunyuan_output_1.png"], prompt="描述这张图片"),
     ]
 
     # test_inputs_small = [
@@ -101,7 +103,7 @@ def main():
     avg_baseline, times_baseline = benchmark_model(
         model_baseline,
         test_inputs_large,
-        num_runs=4,
+        num_runs=5,
         enable_profiling=False,
         profiler_output="trace_baseline_warm.json",
         max_new_tokens=100,
@@ -125,7 +127,7 @@ def main():
     avg_compiled, times_compiled = benchmark_model(
         model_compiled,
         test_inputs_large,
-        num_runs=4,
+        num_runs=5,
         enable_profiling=False,
         profiler_output="trace_compiled_warm.json",
         max_new_tokens=100,

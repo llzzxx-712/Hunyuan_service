@@ -37,7 +37,7 @@ def test_warmup_effectiveness():
         outputs = model.batch_infer(test_inputs, max_new_tokens=100, enable_profiler=False)
         elapsed = time.time() - start
         times.append(elapsed)
-        print(f"  第 {i+1} 次推理: {elapsed:.3f}秒")
+        print(f"  第 {i + 1} 次推理: {elapsed:.3f}秒")
 
     avg_time = sum(times) / len(times)
 

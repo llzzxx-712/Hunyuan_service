@@ -66,7 +66,7 @@ def main():
         _ = model_baseline.batch_infer(test_inputs, max_new_tokens=100)
         elapsed = time.time() - start
         times_baseline.append(elapsed)
-        print(f"  第 {i+1} 次: {elapsed:.3f}秒")
+        print(f"  第 {i + 1} 次: {elapsed:.3f}秒")
 
     avg_baseline = sum(times_baseline) / len(times_baseline)
     print(f"平均耗时: {avg_baseline:.3f}秒")
@@ -95,7 +95,7 @@ def main():
         _ = model_compiled.batch_infer(test_inputs, max_new_tokens=100)
         elapsed = time.time() - start
         times_compiled.append(elapsed)
-        print(f"  第 {i+1} 次: {elapsed:.3f}秒")
+        print(f"  第 {i + 1} 次: {elapsed:.3f}秒")
 
     avg_compiled = sum(times_compiled) / len(times_compiled)
     print(f"平均耗时: {avg_compiled:.3f}秒")

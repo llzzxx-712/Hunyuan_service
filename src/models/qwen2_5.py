@@ -86,6 +86,7 @@ class Qwen2_5Model(BaseModel):
             [
                 ImageToTextInput(imgs=["outputs/image_2.png"], prompt="识别图中的文字"),
                 ImageToTextInput(imgs=["outputs/sample_large.png"], prompt="描述这张图片"),
+                ImageToTextInput(imgs=["outputs/image_2.png"], prompt="识别图中的文字"),
             ]
         )
         print("预热完成")
@@ -156,12 +157,12 @@ class Qwen2_5Model(BaseModel):
             ).to(self.device)
 
             # 调试确认padding情况
-            print(f"Batch中的样本数: {len(batch_inputs['input_ids'])}")
-            for i, (ids, mask) in enumerate(
-                zip(batch_inputs["input_ids"], batch_inputs["attention_mask"])
-            ):
-                actual_tokens = mask.sum().item()  # 实际非padding的token数
-                print(f"  样本{i + 1}: 总长度={len(ids)}, 有效tokens={actual_tokens}")
+            # print(f"Batch中的样本数: {len(batch_inputs['input_ids'])}")
+            # for i, (ids, mask) in enumerate(
+            #     zip(batch_inputs["input_ids"], batch_inputs["attention_mask"])
+            # ):
+            #     actual_tokens = mask.sum().item()  # 实际非padding的token数
+            #     print(f"  样本{i + 1}: 总长度={len(ids)}, 有效tokens={actual_tokens}")
 
             generated_ids = self.model.generate(
                 **batch_inputs,
